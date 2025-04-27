@@ -29,13 +29,83 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    path: "/dashboard",
+    subItems: [
+      { name: "Overview", path: "/dashboard/overview" },
+      { name: "Analytics", path: "/dashboard/analytics" },
+      { name: "CRM", path: "/dashboard/crm" },
+    ],
   },
   {
     icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
+    name: "Appointments",
+    path: "/appointments",
+    subItems: [
+      { name: "All Appointments", path: "/appointments/all" },
+      { name: "Calendar View", path: "/calendar" },
+      { name: "Requests", path: "/appointments/requests" },
+    ],
   },
+  {
+    icon: <UserCircleIcon />,
+    name: "Patients",
+    path: "/patients",
+    subItems: [
+      { name: "All Patients", path: "/patients/all" },
+      { name: "Add Patient", path: "/patients/add" },
+      { name: "Patient Groups", path: "/patients/groups" },
+    ],
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Doctors",
+    path: "/doctors",
+    subItems: [
+      { name: "All Doctors", path: "/doctors/all" },
+      { name: "Add Doctor", path: "/doctors/add" },
+      { name: "Doctor Schedule", path: "/doctors/schedule" },
+    ],
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Staff",
+    path: "/staff",
+    subItems: [
+      { name: "All Staff", path: "/staff/all" },
+      { name: "Roles & Permissions", path: "/staff/roles" },
+    ],
+  },
+  {
+    icon: <BoxCubeIcon />,
+    name: "Departments",
+    path: "/departments",
+    subItems: [
+      { name: "All Departments", path: "/departments/all" },
+      { name: "Add Department", path: "/departments/add" },
+    ],
+  },
+  {
+    icon: <PageIcon />,
+    name: "Billing",
+    path: "/billing",
+    subItems: [
+      { name: "Invoices", path: "/billing/invoices" },
+      { name: "Payments", path: "/billing/payments" },
+      { name: "Subscriptions", path: "/billing/subscriptions" },
+    ],
+  },
+  {
+    icon: <PieChartIcon />,
+    name: "Reports",
+    path: "/reports",
+    subItems: [
+      { name: "Patient Reports", path: "/reports/patient" },
+      { name: "Billing Reports", path: "/reports/billing" },
+    ],
+  },
+];
+
+const othersItems: NavItem[] = [
   {
     icon: <UserCircleIcon />,
     name: "User Profile",
@@ -59,9 +129,6 @@ const navItems: NavItem[] = [
       { name: "404 Error", path: "/error-404", pro: false },
     ],
   },
-];
-
-const othersItems: NavItem[] = [
   {
     icon: <PieChartIcon />,
     name: "Charts",
@@ -88,6 +155,33 @@ const othersItems: NavItem[] = [
     subItems: [
       { name: "Sign In", path: "/signin", pro: false },
       { name: "Sign Up", path: "/signup", pro: false },
+    ],
+  },
+  {
+    icon: <PlugInIcon />,
+    name: "Chat",
+    path: "/chat",
+    subItems: [
+      { name: "Direct Messages", path: "/chat/direct" },
+      { name: "Group Chat", path: "/chat/group" },
+    ],
+  },
+  {
+    icon: <PlugInIcon />,
+    name: "Notifications",
+    path: "/notifications",
+    subItems: [
+      { name: "System Alerts", path: "/notifications/system" },
+      { name: "User Notifications", path: "/notifications/user" },
+    ],
+  },
+  {
+    icon: <PlugInIcon />,
+    name: "Settings",
+    path: "/settings",
+    subItems: [
+      { name: "Profile Settings", path: "/settings/profile" },
+      { name: "System Settings", path: "/settings/system" },
     ],
   },
 ];
@@ -308,14 +402,14 @@ const AppSidebar: React.FC = () => {
             <>
               <img
                 className="dark:hidden"
-                src="/images/logo/logo.svg"
+                src="/images/logo/logo.png"
                 alt="Logo"
                 width={150}
                 height={40}
               />
               <img
                 className="hidden dark:block"
-                src="/images/logo/logo-dark.svg"
+                src="/images/logo/logo.png"
                 alt="Logo"
                 width={150}
                 height={40}

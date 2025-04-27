@@ -1,36 +1,28 @@
 import { useState } from "react";
-import ComponentCard from "../../common/ComponentCard";
 import Checkbox from "../input/Checkbox";
 
-export default function CheckboxComponents() {
+interface CheckboxComponentsProps {
+  label: string;
+  id: string;
+}
+
+export default function CheckboxComponents({ label, id }: CheckboxComponentsProps) {
   const [isChecked, setIsChecked] = useState(false);
-  const [isCheckedTwo, setIsCheckedTwo] = useState(true);
-  const [isCheckedDisabled, setIsCheckedDisabled] = useState(false);
+
   return (
-    <ComponentCard title="Checkbox">
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-3">
-          <Checkbox checked={isChecked} onChange={setIsChecked} />
-          <span className="block text-sm font-medium text-gray-700 dark:text-gray-400">
-            Default
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Checkbox
-            checked={isCheckedTwo}
-            onChange={setIsCheckedTwo}
-            label="Checked"
-          />
-        </div>
-        <div className="flex items-center gap-3">
-          <Checkbox
-            checked={isCheckedDisabled}
-            onChange={setIsCheckedDisabled}
-            disabled
-            label="Disabled"
-          />
-        </div>
+    <div className="flex items-start mb-5">
+      <div className="flex h-5 items-center">
+        <Checkbox
+          checked={isChecked}
+          onChange={setIsChecked}
+          id={id}
+        />
       </div>
-    </ComponentCard>
+      <div className="ml-3 text-sm leading-6">
+        <label htmlFor={id} className="font-medium text-gray-900 dark:text-white cursor-pointer">
+          {label}
+        </label>
+      </div>
+    </div>
   );
 }

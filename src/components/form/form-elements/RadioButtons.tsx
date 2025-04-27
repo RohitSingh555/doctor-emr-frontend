@@ -1,42 +1,53 @@
 import { useState } from "react";
 import ComponentCard from "../../common/ComponentCard";
 import Radio from "../input/Radio";
+import Label from "../Label";
 
-export default function RadioButtons() {
-  const [selectedValue, setSelectedValue] = useState<string>("option2");
+interface RadioButtonOption {
+  label: string;
+  value: string;
+  disabled?: boolean;
+}
+
+interface RadioButtonsProps {
+  label: string; // Add the label for the Radio group
+  name: string;
+  options: RadioButtonOption[];
+  defaultValue?: string;
+  onChange: (value: string) => void;
+}
+
+export default function RadioButtons({
+  label,
+  name,
+  options,
+  defaultValue = "",
+  onChange,
+}: RadioButtonsProps) {
+  const [selectedValue, setSelectedValue] = useState<string>(defaultValue);
 
   const handleRadioChange = (value: string) => {
     setSelectedValue(value);
+    onChange(value); // Passing the selected value to the parent component
   };
+
   return (
-    <ComponentCard title="Radio Buttons">
-      <div className="flex flex-wrap items-center gap-8">
-        <Radio
-          id="radio1"
-          name="group1"
-          value="option1"
-          checked={selectedValue === "option1"}
-          onChange={handleRadioChange}
-          label="Default"
-        />
-        <Radio
-          id="radio2"
-          name="group1"
-          value="option2"
-          checked={selectedValue === "option2"}
-          onChange={handleRadioChange}
-          label="Selected"
-        />
-        <Radio
-          id="radio3"
-          name="group1"
-          value="option3"
-          checked={selectedValue === "option3"}
-          onChange={handleRadioChange}
-          label="Disabled"
-          disabled={true}
-        />
+      <div className="mb-4">
+        <Label>{label}</Label>
+        <div className="flex flex-wrap items-center gap-8">
+          {options.map((option) => (
+            <Radio
+              key={option.value}
+              id={option.value}
+              name={name}
+              value={option.value}
+              checked={selectedValue === option.value}
+              onChange={handleRadioChange}
+              label={option.label}
+              disabled={option.disabled}
+            />
+          ))}
+        </div>
       </div>
-    </ComponentCard>
   );
 }
