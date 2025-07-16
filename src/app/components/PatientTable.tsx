@@ -13,19 +13,37 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-interface Patient {
+interface PatientRegistration {
   id: number;
-  name: string;
+  full_name: string;
   email: string;
-  phone: string;
-  dateOfBirth: string;
-  status: 'active' | 'inactive';
-  lastVisit: string;
-  insurance: string;
+  mobile_number: string;
+  date_of_birth: string;
+  gender: string;
+  address: string;
+  city: string;
+  state_province: string;
+  postal_code: string;
+  country: string;
+  emergency_contact_name: string;
+  emergency_contact_number: string;
+  relationship_to_emergency_contact: string;
+  primary_physician_name: string | null;
+  primary_physician_contact: string | null;
+  health_insurance_provider: string;
+  insurance_policy_number: string;
+  preferred_language: string | null;
+  ethnicity: string | null;
+  communication_preference: string | null;
+  consent_for_data_usage: boolean;
+  consent_for_processing: boolean;
+  consent_for_third_party_sharing: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 interface PatientTableProps {
-  patients: Patient[];
+  patients: PatientRegistration[];
 }
 
 export default function PatientTable({ patients }: PatientTableProps) {
@@ -38,9 +56,9 @@ export default function PatientTable({ patients }: PatientTableProps) {
             <TableHead>Email</TableHead>
             <TableHead>Phone</TableHead>
             <TableHead>Date of Birth</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Last Visit</TableHead>
+            <TableHead>Gender</TableHead>
             <TableHead>Insurance</TableHead>
+            <TableHead>Location</TableHead>
             <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -54,17 +72,17 @@ export default function PatientTable({ patients }: PatientTableProps) {
           ) : (
             patients.map((patient) => (
               <TableRow key={patient.id}>
-                <TableCell className="font-medium">{patient.name}</TableCell>
+                <TableCell className="font-medium">{patient.full_name}</TableCell>
                 <TableCell>{patient.email}</TableCell>
-                <TableCell>{patient.phone}</TableCell>
-                <TableCell>{new Date(patient.dateOfBirth).toLocaleDateString()}</TableCell>
+                <TableCell>{patient.mobile_number}</TableCell>
+                <TableCell>{new Date(patient.date_of_birth).toLocaleDateString()}</TableCell>
                 <TableCell>
-                  <Badge variant={patient.status === 'active' ? 'default' : 'secondary'}>
-                    {patient.status}
+                  <Badge variant="outline">
+                    {patient.gender}
                   </Badge>
                 </TableCell>
-                <TableCell>{new Date(patient.lastVisit).toLocaleDateString()}</TableCell>
-                <TableCell>{patient.insurance}</TableCell>
+                <TableCell>{patient.health_insurance_provider}</TableCell>
+                <TableCell>{`${patient.city}, ${patient.state_province}`}</TableCell>
                 <TableCell>
                   <div className="flex space-x-2">
                     <Button variant="ghost" size="icon">

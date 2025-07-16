@@ -149,6 +149,34 @@ export const patientAPI = {
   },
 };
 
+// Patient Registration API - Updated
+export const patientRegistrationAPI = {
+  getAll: async () => {
+    const response = await api.get('/patients/patient-registrations/');
+    return response.data;
+  },
+
+  getById: async (id: number) => {
+    const response = await api.get(`/patients/patient-registrations/${id}`);
+    return response.data;
+  },
+
+  create: async (registrationData: any) => {
+    const response = await api.post('/patients/patient-registrations/', registrationData);
+    return response.data;
+  },
+
+  update: async (id: number, registrationData: any) => {
+    const response = await api.put(`/patients/patient-registrations/${id}`, registrationData);
+    return response.data;
+  },
+
+  delete: async (id: number) => {
+    const response = await api.delete(`/patients/patient-registrations/${id}`);
+    return response.data;
+  },
+};
+
 // Hospital API
 export const hospitalAPI = {
   getAll: async () => {

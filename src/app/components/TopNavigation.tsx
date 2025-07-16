@@ -13,8 +13,45 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useAuth } from '../context/AuthContext';
 
 export default function TopNavigation() {
+  const { user, logout } = useAuth();
+
+  // Generate initials from user's name or username
+  const getInitials = () => {
+    if (!user) return 'U';
+    
+    if (user.username) {
+      return user.username.substring(0, 2).toUpperCase();
+    }
+    
+    if (user.email) {
+      return user.email.substring(0, 2).toUpperCase();
+    }
+    
+    return 'U';
+  };
+
+  // Get display name
+  const getDisplayName = () => {
+    if (!user) return 'User';
+    
+    if (user.username) {
+      return user.username;
+    }
+    
+    if (user.email) {
+      return user.email.split('@')[0];
+    }
+    
+    return 'User';
+  };
+
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
@@ -54,16 +91,16 @@ export default function TopNavigation() {
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/avatars/01.png" alt="@user" />
-                    <AvatarFallback>JD</AvatarFallback>
+                    <AvatarFallback>{getInitials()}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">John Doe</p>
+                    <p className="text-sm font-medium leading-none">{getDisplayName()}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      john.doe@example.com
+                      {user?.email || 'No email'}
                     </p>
                   </div>
                 </DropdownMenuLabel>
@@ -77,7 +114,7 @@ export default function TopNavigation() {
                   <span>Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
