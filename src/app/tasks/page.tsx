@@ -7,10 +7,32 @@ import { tasksAPI } from "../services/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusIcon, CheckIcon, TrashIcon, Pencil1Icon, PersonIcon, CalendarIcon, ExclamationTriangleIcon } from "@radix-ui/react-icons";
+import { 
+  PlusIcon, 
+  CheckIcon, 
+  TrashIcon, 
+  Pencil1Icon, 
+  PersonIcon, 
+  ExclamationTriangleIcon,
+  PlayIcon,
+  PauseIcon,
+  StopIcon
+} from "@radix-ui/react-icons";
 import { usersAPI } from "../services/api";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { addNotification } from '../utils/notifications';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, AlarmClock, Paperclip, User2, Tag, Loader2, CheckCircle2, Trash2, PlayCircle, PauseCircle, XCircle, AlertTriangle, Clock } from "lucide-react";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { format } from "date-fns";
 
 interface Task {
   id: number;
@@ -39,16 +61,27 @@ interface Task {
   activity_log?: any;
 }
 
+type TaskStatus = 'todo' | 'in_progress' | 'done' | 'cancelled';
+
+const TASK_STATUSES: { value: TaskStatus; label: string; icon: React.ReactNode; color: string }[] = [
+  { value: 'todo', label: 'To Do', icon: <PlayIcon className="w-4 h-4" />, color: 'bg-gray-100 text-gray-700 hover:bg-gray-200' },
+  { value: 'in_progress', label: 'In Progress', icon: <PauseIcon className="w-4 h-4" />, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
+  { value: 'done', label: 'Completed', icon: <CheckIcon className="w-4 h-4" />, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
+  { value: 'cancelled', label: 'Cancelled', icon: <StopIcon className="w-4 h-4" />, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+];
+
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAdd, setShowAdd] = useState(false);
+  const [activeTab, setActiveTab] = useState<TaskStatus>('todo');
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
     is_urgent: false,
     due_date: "",
+    due_time: "",
     priority: "medium",
     notify_on_due: true,
   });
@@ -65,6 +98,7 @@ export default function TasksPage() {
   useEffect(() => {
     fetchTasks();
     usersAPI.getAll().then(setUsers);
+    startNotificationCheck();
   }, []);
 
   const fetchTasks = async () => {
@@ -80,12 +114,69 @@ export default function TasksPage() {
     }
   };
 
+  const startNotificationCheck = () => {
+    const checkDueTasks = () => {
+      const now = new Date();
+      tasks.forEach(task => {
+        if (task.due_date && task.notify_on_due && task.status !== 'done') {
+          const dueDate = new Date(task.due_date);
+          const timeDiff = dueDate.getTime() - now.getTime();
+          
+          // Notify if due within 5 minutes and not already notified
+          if (timeDiff > 0 && timeDiff <= 5 * 60 * 1000) {
+            const notificationKey = `task_${task.id}_notified`;
+            if (!localStorage.getItem(notificationKey)) {
+              addNotification({
+                id: `task_${task.id}_${Date.now()}`,
+                title: "Task Due Soon",
+                message: `Task "${task.title}" is due in ${Math.ceil(timeDiff / 60000)} minutes`,
+                type: 'task',
+                read: false
+              });
+              localStorage.setItem(notificationKey, 'true');
+            }
+          }
+          
+          // Notify if overdue
+          if (timeDiff < 0) {
+            const overdueKey = `task_${task.id}_overdue`;
+            if (!localStorage.getItem(overdueKey)) {
+              addNotification({
+                id: `task_${task.id}_overdue_${Date.now()}`,
+                title: "Task Overdue",
+                message: `Task "${task.title}" is overdue`,
+                type: 'warning',
+                read: false
+              });
+              localStorage.setItem(overdueKey, 'true');
+            }
+          }
+        }
+      });
+    };
+
+    checkDueTasks();
+    const interval = setInterval(checkDueTasks, 30000); // Check every 30 seconds
+    return () => clearInterval(interval);
+  };
+
   const handleAddTask = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      let dueDate = undefined;
+      if (newTask.due_date) {
+        if (newTask.due_time) {
+          // Combine date and time
+          const dateTime = new Date(`${newTask.due_date}T${newTask.due_time}`);
+          dueDate = dateTime.toISOString();
+        } else {
+          dueDate = new Date(newTask.due_date).toISOString();
+        }
+      }
+
       const formData = {
         ...newTask,
-        due_date: newTask.due_date ? new Date(newTask.due_date).toISOString() : undefined,
+        due_date: dueDate,
         status,
         visibility,
         assignees: assignees.map(user_id => ({ user_id })),
@@ -95,7 +186,7 @@ export default function TasksPage() {
       };
       await tasksAPI.create(formData);
       setShowAdd(false);
-      setNewTask({ title: "", description: "", is_urgent: false, due_date: "", priority: "medium", notify_on_due: true });
+      setNewTask({ title: "", description: "", is_urgent: false, due_date: "", due_time: "", priority: "medium", notify_on_due: true });
       setAssignees([]);
       setStatus("todo");
       setVisibility("internal");
@@ -108,6 +199,62 @@ export default function TasksPage() {
     }
   };
 
+  const handleStatusChange = async (taskId: number, newStatus: string) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const updateData = {
+        ...task,
+        status: newStatus,
+        completed_at: newStatus === 'done' ? new Date().toISOString() : undefined
+      };
+
+      await tasksAPI.update(taskId, updateData);
+      fetchTasks();
+
+      if (newStatus === 'done') {
+        addNotification({
+          id: `task_completed_${taskId}_${Date.now()}`,
+          title: "Task Completed",
+          message: `Task "${task.title}" has been marked as completed`,
+          type: 'task',
+          read: false
+        });
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Failed to update task status");
+    }
+  };
+
+  const handleDelayTask = async (taskId: number, delayMinutes: number) => {
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      if (!task || !task.due_date) return;
+
+      const currentDueDate = new Date(task.due_date);
+      const newDueDate = new Date(currentDueDate.getTime() + delayMinutes * 60 * 1000);
+
+      const updateData = {
+        ...task,
+        due_date: newDueDate.toISOString()
+      };
+
+      await tasksAPI.update(taskId, updateData);
+      fetchTasks();
+
+      addNotification({
+        id: `task_delayed_${taskId}_${Date.now()}`,
+        title: "Task Delayed",
+        message: `Task "${task.title}" has been delayed by ${delayMinutes} minutes`,
+        type: 'info',
+        read: false
+      });
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Failed to delay task");
+    }
+  };
+
   const handleDeleteTask = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this task?")) return;
     try {
@@ -116,6 +263,49 @@ export default function TasksPage() {
     } catch (err: any) {
       setError(err.response?.data?.detail || "Failed to delete task");
     }
+  };
+
+  const getStatusIcon = (status: string) => {
+    const statusConfig = TASK_STATUSES.find(s => s.value === status);
+    return statusConfig?.icon || <PlayIcon className="w-4 h-4" />;
+  };
+
+  const getStatusColor = (status: string) => {
+    const statusConfig = TASK_STATUSES.find(s => s.value === status);
+    return statusConfig?.color || 'bg-gray-100 text-gray-700 hover:bg-gray-200';
+  };
+
+  // Forward-only progression: tasks can only move forward, not backward
+  const getNextStatus = (currentStatus: TaskStatus): TaskStatus | null => {
+    switch (currentStatus) {
+      case 'todo':
+        return 'in_progress';
+      case 'in_progress':
+        return 'done';
+      case 'done':
+        return null; // No next status - task is complete
+      case 'cancelled':
+        return null; // No next status - task is cancelled
+      default:
+        return 'in_progress';
+    }
+  };
+
+  // Get available status options for a task (forward progression only)
+  const getAvailableStatuses = (currentStatus: TaskStatus): TaskStatus[] => {
+    const nextStatus = getNextStatus(currentStatus);
+    if (nextStatus) {
+      return [nextStatus];
+    }
+    return [];
+  };
+
+  // Filter tasks by active tab
+  const filteredTasks = tasks.filter(task => task.status === activeTab);
+
+  // Get task counts for each status
+  const getTaskCount = (status: TaskStatus) => {
+    return tasks.filter(task => task.status === status).length;
   };
 
   return (
@@ -139,11 +329,34 @@ export default function TasksPage() {
             </div>
           )}
 
+          {/* Status Tabs */}
+          <div className="mb-6">
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+              {TASK_STATUSES.map((statusConfig) => (
+                <button
+                  key={statusConfig.value}
+                  onClick={() => setActiveTab(statusConfig.value)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    activeTab === statusConfig.value
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  }`}
+                >
+                  {statusConfig.icon}
+                  <span>{statusConfig.label}</span>
+                  <Badge variant="secondary" className="ml-1 text-xs">
+                    {getTaskCount(statusConfig.value)}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Add Task Modal */}
           {showAdd && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-              <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl border border-muted/40">
-                <h2 className="text-2xl font-bold mb-6 text-foreground">Add New Task</h2>
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-2xl border border-muted/40 animate-fade-in">
+                <h2 className="text-2xl font-bold mb-6 text-foreground flex items-center gap-2"><PlusIcon className="w-6 h-6 text-primary" /> Add New Task</h2>
                 <form onSubmit={handleAddTask} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -167,8 +380,23 @@ export default function TasksPage() {
                       <Input id="description" placeholder="Description" value={newTask.description} onChange={e => setNewTask({ ...newTask, description: e.target.value })} className="bg-muted/30 focus:bg-white focus:ring-2 focus:ring-primary/30 transition" />
                     </div>
                     <div>
-                      <Label htmlFor="due_date">Due Date</Label>
-                      <Input id="due_date" type="date" value={newTask.due_date} onChange={e => setNewTask({ ...newTask, due_date: e.target.value })} className="bg-muted/30 focus:bg-white focus:ring-2 focus:ring-primary/30 transition" />
+                      <Label htmlFor="due_date">Due Date & Time</Label>
+                      <DateTimePicker
+                        value={newTask.due_date && newTask.due_time ? new Date(newTask.due_date + 'T' + newTask.due_time) : null}
+                        onChange={(date) => {
+                          if (date) {
+                            setNewTask({
+                              ...newTask,
+                              due_date: date.toISOString().slice(0, 10),
+                              due_time: date.toTimeString().slice(0, 5)
+                            });
+                          } else {
+                            setNewTask({ ...newTask, due_date: "", due_time: "" });
+                          }
+                        }}
+                        placeholder="Pick a date and time"
+                        className="w-full"
+                      />
                     </div>
                     <div>
                       <Label htmlFor="status">Status</Label>
@@ -257,14 +485,14 @@ export default function TasksPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {loading ? (
               <div className="col-span-full flex justify-center items-center h-40">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                <Loader2 className="w-10 h-10 text-primary animate-spin" />
               </div>
-            ) : tasks.length === 0 ? (
+            ) : filteredTasks.length === 0 ? (
               <div className="col-span-full text-center text-muted-foreground py-12">
-                <p>No tasks found. Start by adding a new task.</p>
+                <p>No {activeTab.replace('_', ' ')} tasks found.</p>
               </div>
             ) : (
-              tasks.map(task => (
+              filteredTasks.map(task => (
                 <Card
                   key={task.id}
                   className="relative group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-xl hover:border-primary/40 hover:scale-[1.025] transition-all duration-200 cursor-pointer overflow-hidden p-0"
@@ -280,7 +508,7 @@ export default function TasksPage() {
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2 min-h-[32px]">{task.description}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {task.due_date && <><CalendarIcon className="w-3 h-3" /> <span>Due {new Date(task.due_date).toLocaleDateString()}</span></>}
+                      {task.due_date && <><CalendarIcon className="w-3 h-3" /> <span>Due {new Date(task.due_date).toLocaleDateString()} {new Date(task.due_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></>}
                       {task.patient_name && <><PersonIcon className="w-3 h-3 ml-2" /> <span>{task.patient_name}</span></>}
                     </div>
                     {task.tags && task.tags.length > 0 && (
@@ -292,13 +520,79 @@ export default function TasksPage() {
                     )}
                     {task.attachments && task.attachments.length > 0 && (
                       <div className="flex items-center gap-2 mt-2">
-                        <svg className="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79V17a5 5 0 01-5 5h-4a5 5 0 01-5-5V7a5 5 0 015-5h4a5 5 0 015 5v7a3 3 0 01-3 3h-4a3 3 0 01-3-3V7" /></svg>
+                        <Paperclip className="w-3 h-3 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground">{task.attachments.length} attachment(s)</span>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${task.status === "done" ? "bg-green-100 text-green-700" : task.status === "in_progress" ? "bg-blue-100 text-blue-700" : task.status === "todo" ? "bg-gray-100 text-gray-700" : "bg-yellow-100 text-yellow-700"}`}>{task.status.replace('_', ' ')}</span>
-                      {task.is_urgent && <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full font-semibold ml-2">Urgent</span>}
+                    
+                    {/* Action Buttons */}
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        {getAvailableStatuses(task.status as TaskStatus).length > 0 ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className={`${getStatusColor(getAvailableStatuses(task.status as TaskStatus)[0])} transition-colors`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const nextStatus = getNextStatus(task.status as TaskStatus);
+                              if (nextStatus) {
+                                handleStatusChange(task.id, nextStatus);
+                              }
+                            }}
+                          >
+                            {getStatusIcon(getAvailableStatuses(task.status as TaskStatus)[0])}
+                            <span className="ml-1 capitalize">Move to {getAvailableStatuses(task.status as TaskStatus)[0].replace('_', ' ')}</span>
+                          </Button>
+                        ) : (
+                          <div className="text-sm text-muted-foreground px-2 py-1">
+                            {task.status === 'done' ? 'Task completed' : 'Task cancelled'}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        {task.due_date && (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-blue-600 hover:text-blue-700"
+                              >
+                                <Clock className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleDelayTask(task.id, 15)}>
+                                Delay 15 minutes
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelayTask(task.id, 30)}>
+                                Delay 30 minutes
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelayTask(task.id, 60)}>
+                                Delay 1 hour
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelayTask(task.id, 120)}>
+                                Delay 2 hours
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                        
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteTask(task.id);
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                   {task.status === "done" && (
@@ -325,7 +619,7 @@ export default function TasksPage() {
                 <span className="ml-4 font-semibold">Priority:</span> <span className="px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-700 font-medium">{selectedTask.priority}</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
-                {selectedTask.due_date && <><CalendarIcon className="w-3 h-3" /> <span>Due {new Date(selectedTask.due_date).toLocaleDateString()}</span></>}
+                {selectedTask.due_date && <><CalendarIcon className="w-3 h-3" /> <span>Due {new Date(selectedTask.due_date).toLocaleDateString()} {new Date(selectedTask.due_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></>}
                 {selectedTask.patient_name && <><PersonIcon className="w-3 h-3 ml-2" /> <span>{selectedTask.patient_name}</span></>}
               </div>
               <div className="flex items-center gap-2 text-xs">
@@ -352,7 +646,7 @@ export default function TasksPage() {
                   <ul className="list-disc pl-5 mt-1">
                     {selectedTask.checklist.map((item, idx) => (
                       <li key={idx} className="flex items-center gap-2 text-xs">
-                        {item.completed ? <CheckIcon className="text-green-500 w-3 h-3" /> : <span className="inline-block w-3 h-3 border rounded-full border-muted-foreground" />}
+                        {item.completed ? <CheckCircle2 className="text-green-500 w-3 h-3" /> : <span className="inline-block w-3 h-3 border rounded-full border-muted-foreground" />}
                         <span className={item.completed ? "line-through" : ""}>{item.text}</span>
                       </li>
                     ))}
@@ -364,7 +658,7 @@ export default function TasksPage() {
                   <span className="font-semibold text-xs">Attachments:</span>
                   {selectedTask.attachments.map((att, i) => (
                     <span key={i} className="flex items-center gap-2 text-xs">
-                      <svg className="w-3 h-3 text-muted-foreground" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79V17a5 5 0 01-5 5h-4a5 5 0 01-5-5V7a5 5 0 015-5h4a5 5 0 015 5v7a3 3 0 01-3 3h-4a3 3 0 01-3-3V7" /></svg>
+                      <Paperclip className="w-3 h-3 text-muted-foreground" />
                       <span>{att.name}</span>
                     </span>
                   ))}

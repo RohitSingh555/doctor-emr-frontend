@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bell, Settings, User, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,24 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '../context/AuthContext';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { 
+  getNotifications, 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead, 
+  getUnreadCount,
+  type Notification 
+} from '../utils/notifications';
 
 export default function TopNavigation() {
   const { user, logout } = useAuth();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Generate initials from user's name or username
   const getInitials = () => {
@@ -52,6 +67,50 @@ export default function TopNavigation() {
     logout();
   };
 
+  const handleMarkAsRead = (id: string) => {
+    markNotificationAsRead(id);
+    setNotifications(getNotifications());
+    setUnreadCount(getUnreadCount());
+  };
+
+  const handleMarkAllAsRead = () => {
+    markAllNotificationsAsRead();
+    setNotifications(getNotifications());
+    setUnreadCount(0);
+  };
+
+  // Listen for notifications
+  useEffect(() => {
+    const updateNotifications = () => {
+      setNotifications(getNotifications());
+      setUnreadCount(getUnreadCount());
+    };
+
+    // Initial load
+    updateNotifications();
+
+    // Listen for notification updates
+    const handleNotificationUpdate = () => {
+      updateNotifications();
+    };
+
+    const handleNotificationAdded = () => {
+      updateNotifications();
+    };
+
+    window.addEventListener('notificationUpdated', handleNotificationUpdate);
+    window.addEventListener('notificationAdded', handleNotificationAdded);
+
+    // Check for updates every 10 seconds
+    const interval = setInterval(updateNotifications, 10000);
+
+    return () => {
+      window.removeEventListener('notificationUpdated', handleNotificationUpdate);
+      window.removeEventListener('notificationAdded', handleNotificationAdded);
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
@@ -75,12 +134,70 @@ export default function TopNavigation() {
           </div>
           
           <nav className="flex items-center space-x-2">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-4 w-4" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-red-600 text-[10px] font-medium text-white flex items-center justify-center">
-                3
-              </span>
-            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-600 text-[10px] font-medium text-white flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="end">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="font-semibold">Notifications</h4>
+                  {unreadCount > 0 && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleMarkAllAsRead}
+                      className="text-xs"
+                    >
+                      Mark all read
+                    </Button>
+                  )}
+                </div>
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {notifications.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No notifications
+                    </p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                          notification.read 
+                            ? 'bg-muted/30' 
+                            : 'bg-blue-50 border-blue-200'
+                        }`}
+                        onClick={() => handleMarkAsRead(notification.id)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{notification.title}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {notification.timestamp.toLocaleTimeString()}
+                            </p>
+                          </div>
+                          <Badge 
+                            variant={notification.type === 'task' ? 'default' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {notification.type}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
             
             <Button variant="ghost" size="icon">
               <Settings className="h-4 w-4" />
