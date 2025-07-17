@@ -49,6 +49,12 @@ const navItems = [
       { href: "/appointments/pending", label: "Pending", description: "Pending appointments" }
     ]
   },
+  {
+    href: "/tasks",
+    icon: <ActivityLogIcon className="w-4 h-4" />,
+    label: "Tasks",
+    description: "To-do list and task management"
+  },
   { 
     href: "/medical-records", 
     icon: <FileTextIcon className="w-4 h-4" />, 

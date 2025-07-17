@@ -203,4 +203,40 @@ export const departmentAPI = {
   },
 };
 
+// Tasks API
+export const tasksAPI = {
+  getAll: async () => {
+    const response = await api.get('/tasks');
+    return response.data;
+  },
+
+  getById: async (id: number) => {
+    const response = await api.get(`/tasks/${id}`);
+    return response.data;
+  },
+
+  create: async (taskData: any) => {
+    const response = await api.post('/tasks', taskData);
+    return response.data;
+  },
+
+  update: async (id: number, taskData: any) => {
+    const response = await api.put(`/tasks/${id}`, taskData);
+    return response.data;
+  },
+
+  delete: async (id: number) => {
+    const response = await api.delete(`/tasks/${id}`);
+    return response.data;
+  },
+};
+
+// Users API
+export const usersAPI = {
+  getAll: async () => {
+    const response = await api.get('/auth/users');
+    return response.data;
+  },
+};
+
 export default api; 
