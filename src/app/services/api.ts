@@ -2,7 +2,7 @@ import axios from 'axios';
 import { getToken, removeToken } from '../utils/auth';
 
 // Configure axios base URL
-const API_BASE_URL = 'http://localhost:8500'; // Updated to match backend port
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8500';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -67,12 +67,11 @@ export const authAPI = {
     return response.data;
   },
 
-  signup: async (email: string, password: string, role: string, username: string) => {
+  signup: async (email: string, password: string, username: string) => {
     console.log('Signup attempt for:', email);
     const response = await api.post('/auth/signup', { 
       email, 
-      password, 
-      role,
+      password,
       username
     });
     console.log('Signup response:', response.data);

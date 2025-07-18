@@ -94,6 +94,9 @@ export default function TasksPage() {
   const [checklistInput, setChecklistInput] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [editDate, setEditDate] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchTasks();
@@ -481,6 +484,58 @@ export default function TasksPage() {
             </div>
           )}
 
+          {/* Edit Task Modal */}
+          {showEdit && editTask && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+              <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg border border-muted/40 animate-fade-in">
+                <h2 className="text-2xl font-bold mb-6 text-foreground flex items-center gap-2"><Pencil1Icon className="w-6 h-6 text-primary" /> Edit Task Date & Time</h2>
+                <form onSubmit={async (e: React.FormEvent<HTMLFormElement>) => {
+                  e.preventDefault();
+                  if (!editTask || !editDate) return;
+                  console.log('editDate:', editDate);
+                  const payload = {
+                    title: editTask.title,
+                    description: editTask.description,
+                    is_urgent: editTask.is_urgent,
+                    status: editTask.status,
+                    priority: editTask.priority,
+                    due_date: editDate.toISOString(),
+                    notify_on_due: editTask.notify_on_due,
+                    assignees: editTask.assignees,
+                    patient_id: editTask.patient_id,
+                    related_entity_type: editTask.related_entity_type,
+                    related_entity_id: editTask.related_entity_id,
+                    visibility: editTask.visibility,
+                    tags: editTask.tags,
+                    checklist: editTask.checklist,
+                    attachments: editTask.attachments,
+                    comments: editTask.comments
+                  };
+                  console.log('Payload sent to backend:', payload);
+                  await tasksAPI.update(editTask.id, payload);
+                  setShowEdit(false);
+                  setEditTask(null);
+                  setEditDate(null);
+                  fetchTasks();
+                }} className="space-y-6">
+                  <div>
+                    <Label htmlFor="edit_due_date">Due Date & Time</Label>
+                    <DateTimePicker
+                      value={editDate}
+                      onChange={setEditDate}
+                      placeholder="Pick a date and time"
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="flex justify-end space-x-2 mt-6">
+                    <Button type="button" variant="ghost" onClick={() => { setShowEdit(false); setEditTask(null); setEditDate(null); }} className="border border-muted/40">Cancel</Button>
+                    <Button type="submit" className="bg-primary/90 hover:bg-primary text-white">Save</Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* Task List */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {loading ? (
@@ -508,7 +563,7 @@ export default function TasksPage() {
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2 min-h-[32px]">{task.description}</p>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      {task.due_date && <><CalendarIcon className="w-3 h-3" /> <span>Due {new Date(task.due_date).toLocaleDateString()} {new Date(task.due_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></>}
+                      {task.due_date && <><CalendarIcon className="w-3 h-3" /> <span>Due {task.due_date ? format(new Date(task.due_date), 'dd/MM/yyyy HH:mm') : '-'}</span></>}
                       {task.patient_name && <><PersonIcon className="w-3 h-3 ml-2" /> <span>{task.patient_name}</span></>}
                     </div>
                     {task.tags && task.tags.length > 0 && (
@@ -581,6 +636,19 @@ export default function TasksPage() {
                           </DropdownMenu>
                         )}
                         
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={e => {
+                            e.stopPropagation();
+                            setEditTask(task);
+                            setEditDate(task.due_date ? new Date(task.due_date) : null);
+                            setShowEdit(true);
+                          }}
+                          className="text-primary hover:text-blue-700"
+                        >
+                          <Pencil1Icon className="w-4 h-4" />
+                        </Button>
                         <Button
                           size="sm"
                           variant="ghost"

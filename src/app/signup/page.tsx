@@ -23,7 +23,6 @@ export default function Signup() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -35,10 +34,6 @@ export default function Signup() {
       setError('Passwords do not match');
       return;
     }
-    if (!role) {
-      setError('Please select a role');
-      return;
-    }
     if (!username) {
       setError('Please enter a username');
       return;
@@ -46,7 +41,7 @@ export default function Signup() {
     setLoading(true);
     setError('');
     try {
-      const response = await authAPI.signup(email, password, role, username);
+      const response = await authAPI.signup(email, password, username);
       if (response.token) {
         // Get user data from the signup response or fetch it
         const userData = await authAPI.getCurrentUser();
@@ -248,42 +243,6 @@ export default function Signup() {
               }}
               placeholder="Confirm your password"
             />
-          </div>
-
-          <div>
-            <label htmlFor="role" style={{
-              display: 'block',
-              marginBottom: '8px',
-              fontSize: '14px',
-              fontWeight: '500',
-              color: '#374151'
-            }}>
-              Role
-            </label>
-            <select
-              id="role"
-              value={role}
-              onChange={e => setRole(e.target.value)}
-              required
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '16px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '12px',
-                fontSize: '16px',
-                transition: 'all 0.2s ease',
-                background: loading ? '#f9fafb' : '#ffffff',
-                color: '#1f2937',
-                boxSizing: 'border-box',
-                cursor: loading ? 'not-allowed' : 'pointer'
-              }}
-            >
-              <option value="">Select your role</option>
-              {ROLES.map(r => (
-                <option key={r.value} value={r.value}>{r.label}</option>
-              ))}
-            </select>
           </div>
 
           <button

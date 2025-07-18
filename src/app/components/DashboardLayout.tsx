@@ -25,6 +25,13 @@ const navItems = [
     label: "Dashboard",
     description: "Overview and analytics"
   },
+  // Add Users under me option here
+  {
+    href: "/admin/users-under-me",
+    icon: <PersonIcon className="w-4 h-4" />,
+    label: "Users under me",
+    description: "View and manage your subordinates"
+  },
   { 
     href: "/patients", 
     icon: <PersonIcon className="w-4 h-4" />, 
