@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import DashboardLayout from "@/app/components/DashboardLayout";
 import { useAuth } from "@/app/context/AuthContext";
+import Link from "next/link";
 
 const roleColors: Record<string, string> = {
   SUPER_ADMIN: "bg-gradient-to-r from-purple-500 to-pink-500 text-white",
@@ -26,7 +27,7 @@ export default function UsersUnderMePage() {
   const [error, setError] = useState("");
   const { user: currentUser } = useAuth();
 
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8500';
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:9500';
 
   useEffect(() => {
     setLoading(true);
@@ -83,9 +84,11 @@ export default function UsersUnderMePage() {
                     {users.map((u) => (
                       <tr key={u.id} className="border-b hover:bg-muted/30">
                         <td className="px-4 py-2 flex items-center gap-2">
-                          <Avatar className="w-7 h-7 text-base font-bold bg-muted-foreground/10">
-                            {u.username[0]?.toUpperCase()}
-                          </Avatar>
+                          <Link href={`/admin/users-under-me/${u.id}`}>
+                            <Avatar className="w-7 h-7 text-base font-bold bg-muted-foreground/10 cursor-pointer hover:ring-2 ring-primary transition">
+                              {u.username[0]?.toUpperCase()}
+                            </Avatar>
+                          </Link>
                           <span>{u.username}</span>
                         </td>
                         <td className="px-4 py-2">
